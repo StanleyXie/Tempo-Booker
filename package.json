@@ -1,0 +1,72 @@
+{
+  "name": "tempo-booker",
+  "version": "1.1.0",
+  "description": "A simplified CLI tool for Tempo time tracking with automatic Account ID discovery, static issue mapping, and streamlined setup for professional workflow management",
+  "main": "src/index.js",
+  "bin": {
+    "tempo-booker": "./bin/tempo-booker.js",
+    "tempo": "./bin/tempo-booker.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "node testing/test.js",
+    "test:security": "node testing/test-security.js",
+    "security:status": "node src/index.js --security-status",
+    "security:migrate": "node src/utils/migrate-token.js",
+    "security:test": "node src/index.js --test-keychain"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "src/",
+    "bin/",
+    "testing/",
+    "docs/",
+    "config.template.yaml",
+    "README.md",
+    "CHANGELOG.md",
+    "TESTING.md",
+    "USER-TESTING-GUIDE.md"
+  ],
+  "dependencies": {
+    "axios": "^1.6.0",
+    "chalk": "^4.1.0",
+    "express": "^4.18.0",
+    "inquirer": "^8.2.6",
+    "js-yaml": "^4.1.0",
+    "keytar": "^7.9.0",
+    "moment": "^2.29.0",
+    "open": "^10.2.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.0"
+  },
+  "keywords": [
+    "tempo",
+    "jira",
+    "time-tracking",
+    "cli",
+    "csv-import",
+    "worklog",
+    "atlassian",
+    "account-id",
+    "static-mapping",
+    "automation",
+    "productivity",
+    "simplified-setup"
+  ],
+  "author": "Stanley Xie <stanleyx@example.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/stanleyx/tempo-booker#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stanleyx/tempo-booker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stanleyx/tempo-booker/issues"
+  },
+  "preferGlobal": true
+}

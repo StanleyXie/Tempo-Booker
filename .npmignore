@@ -1,0 +1,76 @@
+# Development files
+*.log
+logs/
+node_modules/
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# User-specific configuration (never include in package)
+config.yaml
+config.yaml.backup.*
+
+# Test files
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+test-*.js
+test-*.csv
+
+# Development tools
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.travis.yml
+.circleci/
+
+# Documentation (development)
+docs/
+CONTRIBUTING.md
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# NPM
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Optional npm cache directory
+.npm
+
+# Coverage directory used by tools like istanbul
+coverage/
+.nyc_output/
+
+# Dependency directories
+jspm_packages/
+
+# Optional eslint cache
+.eslintcache

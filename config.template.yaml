@@ -1,0 +1,56 @@
+# Tempo CLI Configuration Template
+# Copy this file to config.yaml and customize for your setup
+# Or run 'tempo-booker --setup' for guided configuration
+
+# API Configuration
+api:
+  tempoToken: "your_tempo_api_token_here"
+  jiraBaseUrl: "https://your-company.atlassian.net"
+  # Optional: Add JIRA credentials for enhanced issue summaries
+  # jiraEmail: "your-email@company.com"  
+  # jiraToken: "your_jira_api_token"
+
+# User Configuration (auto-discovered during setup)
+user:
+  name: "Your Name"
+  accountId: "your_atlassian_account_id"
+  workspaceDir: "/Users/username/tempo-workspace"
+
+# File Management
+files:
+  importFile: "my-worklogs.csv"    # relative to workspaceDir
+  exportDir: "exports"             # relative to workspaceDir  
+  backupDir: "backups"             # relative to workspaceDir
+
+# Import Preferences
+import:
+  defaultDateScope: "current-week"  # options: current-week, last-7-days, this-month, all
+
+# Issue Mappings (auto-populated during usage)
+issueMapping:
+  # Example:
+  # "PROJECT-123":
+  #   id: "12345"
+  #   summary: "Sample Project Task"
+
+# Atlassian Configuration (auto-discovered)
+atlassian:
+  cloudId: "auto-discovered"
+
+# CLI Preferences
+cli:
+  function_beta: false      # Show/hide beta functions
+  colorOutput: true         # Enable colored terminal output
+  progressBars: true        # Show progress bars
+  verboseLogging: false     # Show detailed debug information
+  silentMode: false         # Minimize console output
+  logToFile: true          # Enable file logging
+
+# Logging Configuration  
+logging:
+  enabled: true
+  logFile: "logs/tempo-cli.log"  # relative to workspaceDir
+  maxFileSize: "10MB"
+  maxFiles: 5
+  level: "info"                  # debug, info, warn, error
+  consoleLevel: "normal"         # normal (transaction level), debug (system level)
