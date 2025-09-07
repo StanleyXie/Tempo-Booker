@@ -5,6 +5,23 @@ All notable changes to the Tempo Booker CLI project will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2025-09-07
+
+### Added
+
+- **📋 Issue Reference Display**: Added issue mapping reference with summaries to time table for better user context
+- **🔄 Config Cache Refresh**: Implemented config cache clearing on every application startup
+
+### Fixed
+
+- **🗂️ Proper Issue Filtering**: Updated detailed list to use issue key/ID filtering instead of description pattern matching
+- **⚡ Fresh Config Loading**: Ensured config.yaml changes are immediately reflected without restart
+
+### Changed
+
+- **🎯 Enhanced User Experience**: Time table now shows issue summaries for easy reference
+- **📊 Cleaner Data Model**: Removed dependency on description text parsing for issue identification
+
 ## [1.1.2] - 2025-09-07
 
 ### Fixed
