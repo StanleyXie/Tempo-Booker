@@ -52,9 +52,12 @@ class TimeTrackingController {
         log.info("Resolving issue ID...");
         try {
           // Use the enhanced issue resolver
-          const issueResolver = require('../services/staticIssueResolver');
-          const issueDetails = await issueResolver.resolveIssue(worklogData.issueKey, false);
-          
+          const issueResolver = require("../services/staticIssueResolver");
+          const issueDetails = await issueResolver.resolveIssue(
+            worklogData.issueKey,
+            false,
+          );
+
           if (issueDetails && issueDetails.id) {
             worklogData.issueId = issueDetails.id;
             log.success(
@@ -122,7 +125,8 @@ class TimeTrackingController {
       }
     } catch (error) {
       // Silently fail if we can't get issue details
-      if (!logger) log.info(`Unable to fetch issue details for ${issueIdOrKey}`); // Only log if explicit logger provided
+      if (!logger)
+        log.info(`Unable to fetch issue details for ${issueIdOrKey}`); // Only log if explicit logger provided
     }
 
     return null;
@@ -271,17 +275,17 @@ class TimeTrackingController {
       if (dateTo) {
         params.to = moment(dateTo).format("YYYY-MM-DD");
       }
-      
+
       const worklogs = await tempoApiService.getWorklogs(params);
-      
+
       // Return only the worklog results, filtered to exclude anonymized entries
-      const validWorklogs = worklogs.results?.filter(wl => 
-        wl.issue && wl.issue.key && !wl.issue.key.startsWith('ANON-')
-      ) || [];
-      
+      const validWorklogs =
+        worklogs.results?.filter(
+          (wl) => wl.issue && wl.issue.key && !wl.issue.key.startsWith("ANON-"),
+        ) || [];
+
       log.debug(`Found ${validWorklogs.length} valid worklogs for selection`);
       return validWorklogs;
-      
     } catch (error) {
       log.error("✗ Failed to fetch worklogs for selection:", error.message);
       throw error;
@@ -370,74 +374,86 @@ class TimeTrackingController {
     const log = logger || this.logger;
     try {
       log.transaction(`Clearing worklogs from ${dateFrom} to ${dateTo}`);
-      
+
       // Get worklogs for the date range
       const params = {
         from: moment(dateFrom).format("YYYY-MM-DD"),
         to: moment(dateTo).format("YYYY-MM-DD"),
       };
-      
+
       const worklogs = await tempoApiService.getWorklogs(params);
-      
+
       if (!worklogs.results || worklogs.results.length === 0) {
         log.warn("No worklogs found to clear for the specified date range.");
         return { deleted: 0, skipped: 0 };
       }
 
       // Filter out anonymized and non-user worklogs that can't be deleted
-      const config = require('../utils/config');
+      const config = require("../utils/config");
       const userAccountId = config.userAccountId;
-      
-      const deletableWorklogs = worklogs.results.filter(wl => {
-        const isUserWorklog = wl.author?.accountId === userAccountId || wl.authorAccountId === userAccountId;
-        const isAnonymizedOldWorklog = wl.author?.accountId === "__tempo-io__unknown_user";
-        
+
+      const deletableWorklogs = worklogs.results.filter((wl) => {
+        const isUserWorklog =
+          wl.author?.accountId === userAccountId ||
+          wl.authorAccountId === userAccountId;
+        const isAnonymizedOldWorklog =
+          wl.author?.accountId === "__tempo-io__unknown_user";
+
         // Only delete user's own worklogs and skip old anonymized ones
         return isUserWorklog && !isAnonymizedOldWorklog;
       });
 
       const totalFound = worklogs.results.length;
       const skippedCount = totalFound - deletableWorklogs.length;
-      
+
       if (deletableWorklogs.length === 0) {
-        log.warn(`Found ${totalFound} worklogs, but none are deletable by current user.`);
+        log.warn(
+          `Found ${totalFound} worklogs, but none are deletable by current user.`,
+        );
         return { deleted: 0, skipped: totalFound };
       }
 
-      log.info(`Found ${deletableWorklogs.length} deletable worklogs (skipping ${skippedCount} non-deletable)`);
+      log.info(
+        `Found ${deletableWorklogs.length} deletable worklogs (skipping ${skippedCount} non-deletable)`,
+      );
 
       // Delete each worklog
       let deletedCount = 0;
       let errors = 0;
-      
+
       for (const worklog of deletableWorklogs) {
         try {
-          log.debug(`Deleting worklog: ${worklog.startDate} - ${worklog.issue?.key || 'Unknown'} - ${(worklog.timeSpentSeconds/3600).toFixed(1)}h`);
+          log.debug(
+            `Deleting worklog: ${worklog.startDate} - ${worklog.issue?.key || "Unknown"} - ${(worklog.timeSpentSeconds / 3600).toFixed(1)}h`,
+          );
           await tempoApiService.deleteWorklog(worklog.tempoWorklogId);
           deletedCount++;
-          
+
           // Small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         } catch (error) {
-          log.warn(`Failed to delete worklog ${worklog.tempoWorklogId}: ${error.message}`);
+          log.warn(
+            `Failed to delete worklog ${worklog.tempoWorklogId}: ${error.message}`,
+          );
           errors++;
         }
       }
 
       const summary = { deleted: deletedCount, skipped: skippedCount, errors };
-      
+
       if (errors === 0) {
         log.success(`✅ Successfully cleared ${deletedCount} worklogs`);
       } else {
         log.warn(`⚠️  Cleared ${deletedCount} worklogs with ${errors} errors`);
       }
-      
+
       if (skippedCount > 0) {
-        log.info(`📋 Skipped ${skippedCount} non-deletable worklogs (anonymized or not owned by you)`);
+        log.info(
+          `📋 Skipped ${skippedCount} non-deletable worklogs (anonymized or not owned by you)`,
+        );
       }
 
       return summary;
-      
     } catch (error) {
       log.error("✗ Failed to clear worklogs:", error.message);
       throw error;
@@ -497,7 +513,7 @@ class TimeTrackingController {
         }
         key = issueKey;
       } else if (groupBy === "week") {
-        key = moment(worklog.startDate).startOf("week").format("YYYY-MM-DD");
+        key = moment(worklog.startDate).startOf("isoWeek").format("YYYY-MM-DD");
       }
 
       if (!grouped[key]) {
@@ -768,7 +784,7 @@ class TimeTrackingController {
         return;
       }
 
-      this.printDetailedList(worklogs.results, dateFrom, dateTo);
+      this.printDetailedList(worklogs.results, dateFrom, dateTo, log);
       return worklogs;
     } catch (error) {
       log.error("✗ Failed to generate detailed list:", error.message);
@@ -776,7 +792,10 @@ class TimeTrackingController {
     }
   }
 
-  printDetailedList(worklogs, dateFrom, dateTo) {
+  printDetailedList(worklogs, dateFrom, dateTo, log = null) {
+    // Use provided logger or fallback to instance logger or console
+    const logger = log || this.logger || console;
+
     // Predefined issue list for filtering
     const predefinedIssueKeys = new Set([
       "DAU-2579",
@@ -830,13 +849,13 @@ class TimeTrackingController {
     });
 
     // Group by date for display
-    log.info("\n📋 Detailed Worklog List");
+    logger.info("\n📋 Detailed Worklog List");
     const periodStart = moment(dateFrom).format("DD/MMM/YY");
     const periodEnd = moment(dateTo).format("DD/MMM/YY");
-    log.info(
+    logger.info(
       `📅 Period: ${periodStart} - ${periodEnd} | Total: ${(totalSeconds / 3600).toFixed(1)}h (${filteredWorklogs.length} entries)`,
     );
-    log.info("─".repeat(120));
+    logger.info("─".repeat(120));
 
     let currentDate = null;
     let dailyTotal = 0;
@@ -845,13 +864,13 @@ class TimeTrackingController {
       if (currentDate !== entry.date) {
         // Print previous day total
         if (currentDate !== null) {
-          log.info(`   Daily Total: ${dailyTotal.toFixed(1)}h`);
-          log.info("─".repeat(120));
+          logger.info(`   Daily Total: ${dailyTotal.toFixed(1)}h`);
+          logger.info("─".repeat(120));
         }
 
         // Print new date header
         const dateFormatted = moment(entry.date).format("dddd, MMM DD YYYY");
-        log.info(`\n${dateFormatted}`);
+        logger.info(`\n${dateFormatted}`);
         currentDate = entry.date;
         dailyTotal = 0;
       }
@@ -864,18 +883,18 @@ class TimeTrackingController {
       const timeScope = `${startTimeStr}-${endTimeStr}`;
       const hoursStr = `${entry.hours.toFixed(entry.hours % 1 === 0 ? 0 : 1)}h`;
 
-      log.info(
+      logger.info(
         `  ${entry.issueKey.padEnd(12)} ${timeScope.padEnd(11)} ${hoursStr.padStart(6)}  ${entry.description}`,
       );
     });
 
     // Final day total
     if (currentDate !== null) {
-      log.info(`   Daily Total: ${dailyTotal.toFixed(1)}h`);
+      logger.info(`   Daily Total: ${dailyTotal.toFixed(1)}h`);
     }
 
-    log.info("─".repeat(120));
-    log.success(`📊 Grand Total: ${(totalSeconds / 3600).toFixed(1)}h`);
+    logger.info("─".repeat(120));
+    logger.success(`📊 Grand Total: ${(totalSeconds / 3600).toFixed(1)}h`);
   }
 
   getCleanDescription(description, issueKey) {
@@ -2682,7 +2701,7 @@ class TimeTrackingController {
       // Resolve file path to export directory
       const path = require("path");
       const exportPath = path.join(config.exportDir, fileName);
-      
+
       // Ensure export directory exists
       if (!fs.existsSync(config.exportDir)) {
         fs.mkdirSync(config.exportDir, { recursive: true });

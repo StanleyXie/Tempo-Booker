@@ -1,10 +1,11 @@
-const inquirer = require('inquirer');
-const chalk = require('chalk');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const yaml = require('js-yaml');
-const TokenHelpers = require('./tokenHelpers');
+const inquirer = require("inquirer");
+const chalk = require("chalk");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const moment = require("moment");
+const yaml = require("js-yaml");
+const TokenHelpers = require("./tokenHelpers");
 
 class SetupWizard {
   constructor() {
@@ -12,47 +13,60 @@ class SetupWizard {
     this.tempoApiService = null;
   }
 
+  // Helper method to generate current week range string
+  getCurrentWeekRange() {
+    const start = moment().startOf("isoWeek");
+    const end = moment().endOf("isoWeek");
+    return `${start.format("MMM DD")} - ${end.format("MMM DD")}`;
+  }
+
   async run() {
-    console.log(chalk.blue.bold('\n🚀 Tempo Booker - First Time Setup'));
-    console.log(chalk.gray('Let\'s configure your Tempo Booker for the best experience\n'));
+    console.log(chalk.blue.bold("\n🚀 Tempo Booker - First Time Setup"));
+    console.log(
+      chalk.gray("Let's configure your Tempo Booker for the best experience\n"),
+    );
 
     try {
       await this.chooseSetupMode();
       await this.runSimplifiedSetup();
     } catch (error) {
-      console.error(chalk.red('\n❌ Setup failed:'), error.message);
-      console.log(chalk.yellow('You can run setup again anytime with: tempo-booker --setup'));
+      console.error(chalk.red("\n❌ Setup failed:"), error.message);
+      console.log(
+        chalk.yellow(
+          "You can run setup again anytime with: tempo-booker --setup",
+        ),
+      );
       process.exit(1);
     }
   }
 
   async chooseSetupMode() {
-    console.log(chalk.blue('🎯 Tempo Booker Setup'));
-    console.log(chalk.gray('Simple setup focused on what you actually need\n'));
+    console.log(chalk.blue("🎯 Tempo Booker Setup"));
+    console.log(chalk.gray("Simple setup focused on what you actually need\n"));
 
     const { helpType } = await inquirer.prompt([
       {
-        type: 'list',
-        name: 'helpType',
-        message: 'Do you need help before we start?',
+        type: "list",
+        name: "helpType",
+        message: "Do you need help before we start?",
         choices: [
-          { name: 'No, I\'m ready to start setup', value: 'none' },
-          { name: '🎫 Help me get my Tempo API token', value: 'tempo_token' },
-          { name: '🔍 Help me find my Account ID', value: 'account_id' },
-          { name: '📖 Show me both (token + account ID)', value: 'both' }
-        ]
-      }
+          { name: "No, I'm ready to start setup", value: "none" },
+          { name: "🎫 Help me get my Tempo API token", value: "tempo_token" },
+          { name: "🔍 Help me find my Account ID", value: "account_id" },
+          { name: "📖 Show me both (token + account ID)", value: "both" },
+        ],
+      },
     ]);
 
-    if (helpType === 'tempo_token' || helpType === 'both') {
+    if (helpType === "tempo_token" || helpType === "both") {
       await TokenHelpers.showTempoTokenInstructions();
     }
-    
-    if (helpType === 'account_id' || helpType === 'both') {
+
+    if (helpType === "account_id" || helpType === "both") {
       await TokenHelpers.showAccountIdHelp();
     }
 
-    return 'simplified';
+    return "simplified";
   }
 
   async runSimplifiedSetup() {
@@ -63,29 +77,32 @@ class SetupWizard {
   }
 
   async collectSimplifiedConfiguration() {
-    console.log(chalk.yellow('📡 Step 1: Essential Configuration'));
-    console.log(chalk.gray('Just the basics - Tempo API token and your info\n'));
+    console.log(chalk.yellow("📡 Step 1: Essential Configuration"));
+    console.log(
+      chalk.gray("Just the basics - Tempo API token and your info\n"),
+    );
 
     // Collect JIRA base URL first
     const { jiraBaseUrl } = await inquirer.prompt([
       {
-        type: 'input', 
-        name: 'jiraBaseUrl',
-        message: 'Enter your JIRA base URL (e.g., https://company.atlassian.net):',
+        type: "input",
+        name: "jiraBaseUrl",
+        message:
+          "Enter your JIRA base URL (e.g., https://company.atlassian.net):",
         validate: (input) => {
-          if (!input.trim()) return 'JIRA base URL is required';
+          if (!input.trim()) return "JIRA base URL is required";
           try {
             new URL(input.trim());
-            if (!input.includes('atlassian.net')) {
-              return 'Please enter a valid Atlassian JIRA URL';
+            if (!input.includes("atlassian.net")) {
+              return "Please enter a valid Atlassian JIRA URL";
             }
             return true;
           } catch {
-            return 'Please enter a valid URL';
+            return "Please enter a valid URL";
           }
         },
-        filter: (input) => input.trim().replace(/\/$/, '')
-      }
+        filter: (input) => input.trim().replace(/\/$/, ""),
+      },
     ]);
 
     // Collect and validate Tempo token
@@ -96,93 +113,115 @@ class SetupWizard {
     while (!tempoValid && attempts < 3) {
       const { token } = await inquirer.prompt([
         {
-          type: 'password',
-          name: 'token',
-          message: attempts === 0 ? 'Enter your Tempo API token:' : 'Please try again with a valid Tempo API token:',
-          mask: '*',
+          type: "password",
+          name: "token",
+          message:
+            attempts === 0
+              ? "Enter your Tempo API token:"
+              : "Please try again with a valid Tempo API token:",
+          mask: "*",
           validate: (input) => {
-            if (!input.trim()) return 'Tempo API token is required';
-            if (input.trim().length < 10) return 'Token seems too short - please check';
+            if (!input.trim()) return "Tempo API token is required";
+            if (input.trim().length < 10)
+              return "Token seems too short - please check";
             return true;
           },
-          filter: (input) => input.trim()
-        }
+          filter: (input) => input.trim(),
+        },
       ]);
 
       // Validate token
-      const validation = await TokenHelpers.validateTempoToken(token, jiraBaseUrl);
+      const validation = await TokenHelpers.validateTempoToken(
+        token,
+        jiraBaseUrl,
+      );
       if (validation.valid) {
         tempoToken = token;
         tempoValid = true;
         this.tempoApiResult = validation.result;
-        
+
         // Try automatic Account ID retrieval first
-        console.log(chalk.blue('\n🤖 Attempting automatic user discovery...'));
-        const autoAccountResult = await TokenHelpers.getAccountIdFromTempo(token, jiraBaseUrl);
-        
+        console.log(chalk.blue("\n🤖 Attempting automatic user discovery..."));
+        const autoAccountResult = await TokenHelpers.getAccountIdFromTempo(
+          token,
+          jiraBaseUrl,
+        );
+
         if (autoAccountResult.success) {
           this.config.user = {
             name: autoAccountResult.name,
-            accountId: autoAccountResult.accountId
+            accountId: autoAccountResult.accountId,
           };
-          console.log(chalk.green(`✅ Auto-retrieved: ${autoAccountResult.name} (${autoAccountResult.accountId})`));
+          console.log(
+            chalk.green(
+              `✅ Auto-retrieved: ${autoAccountResult.name} (${autoAccountResult.accountId})`,
+            ),
+          );
         } else {
           // Fallback to old method
-          const discoveredUser = await TokenHelpers.discoverUserFromApi(validation.result);
+          const discoveredUser = await TokenHelpers.discoverUserFromApi(
+            validation.result,
+          );
           if (discoveredUser) {
             this.config.user = {
               name: discoveredUser.name,
-              accountId: discoveredUser.accountId
+              accountId: discoveredUser.accountId,
             };
-            console.log(chalk.green(`✅ Auto-discovered user: ${discoveredUser.name}`));
+            console.log(
+              chalk.green(`✅ Auto-discovered user: ${discoveredUser.name}`),
+            );
           }
         }
       } else {
         attempts++;
         if (attempts < 3) {
-          console.log(chalk.red(`❌ Validation failed (attempt ${attempts}/3)`));
-          
+          console.log(
+            chalk.red(`❌ Validation failed (attempt ${attempts}/3)`),
+          );
+
           const { retry } = await inquirer.prompt([
             {
-              type: 'confirm',
-              name: 'retry',
-              message: 'Would you like to try a different token?',
-              default: true
-            }
+              type: "confirm",
+              name: "retry",
+              message: "Would you like to try a different token?",
+              default: true,
+            },
           ]);
 
           if (!retry) {
-            throw new Error('Tempo API token validation failed');
+            throw new Error("Tempo API token validation failed");
           }
         } else {
-          throw new Error('Tempo API token validation failed after 3 attempts');
+          throw new Error("Tempo API token validation failed after 3 attempts");
         }
       }
     }
 
     // Store token securely
-    const SecureTokenManager = require('./secureTokenManager');
+    const SecureTokenManager = require("./secureTokenManager");
     const tokenManager = new SecureTokenManager();
     await tokenManager.storeToken(tempoToken);
-    
+
     this.config.api = {
-      jiraBaseUrl: jiraBaseUrl
+      jiraBaseUrl: jiraBaseUrl,
       // tempoToken is now stored securely, not in config file
     };
 
     // If user discovery failed, help user find their account ID
     if (!this.config.user) {
-      console.log(chalk.yellow('\n👤 User Information'));
-      console.log(chalk.gray('Could not auto-discover your user info from Tempo API\n'));
+      console.log(chalk.yellow("\n👤 User Information"));
+      console.log(
+        chalk.gray("Could not auto-discover your user info from Tempo API\n"),
+      );
 
       // Offer help finding account ID
       const { needAccountIdHelp } = await inquirer.prompt([
         {
-          type: 'confirm',
-          name: 'needAccountIdHelp',
-          message: 'Do you need help finding your Atlassian Account ID?',
-          default: true
-        }
+          type: "confirm",
+          name: "needAccountIdHelp",
+          message: "Do you need help finding your Atlassian Account ID?",
+          default: true,
+        },
       ]);
 
       if (needAccountIdHelp) {
@@ -191,23 +230,26 @@ class SetupWizard {
 
       const userInfo = await inquirer.prompt([
         {
-          type: 'input',
-          name: 'name',
-          message: 'Enter your name:',
-          validate: (input) => input.trim() ? true : 'Name is required',
-          filter: (input) => input.trim()
+          type: "input",
+          name: "name",
+          message: "Enter your name:",
+          validate: (input) => (input.trim() ? true : "Name is required"),
+          filter: (input) => input.trim(),
         },
         {
-          type: 'input',
-          name: 'accountId',
-          message: 'Enter your Atlassian Account ID (e.g., 712020:xxx-xxx-xxx):',
+          type: "input",
+          name: "accountId",
+          message:
+            "Enter your Atlassian Account ID (e.g., 712020:xxx-xxx-xxx):",
           validate: (input) => {
-            if (!input.trim()) return 'Account ID is required for worklog attribution';
-            if (!input.includes(':')) return 'Account ID should be in format: 712020:xxx-xxx-xxx';
+            if (!input.trim())
+              return "Account ID is required for worklog attribution";
+            if (!input.includes(":"))
+              return "Account ID should be in format: 712020:xxx-xxx-xxx";
             return true;
           },
-          filter: (input) => input.trim()
-        }
+          filter: (input) => input.trim(),
+        },
       ]);
 
       this.config.user = userInfo;
@@ -215,136 +257,184 @@ class SetupWizard {
 
     // Auto-discover cloud ID
     this.config.atlassian = {
-      cloudId: await TokenHelpers.discoverAtlassianCloudId(jiraBaseUrl)
+      cloudId: await TokenHelpers.discoverAtlassianCloudId(jiraBaseUrl),
     };
-    
-    console.log(chalk.green('✅ Configuration complete - ready for workspace setup'));
+
+    console.log(
+      chalk.green("✅ Configuration complete - ready for workspace setup"),
+    );
   }
 
   async showAccountIdHelp() {
-    console.log(chalk.blue.bold('\n🔍 Finding Your Atlassian Account ID'));
-    console.log(chalk.gray('Your Account ID is needed to attribute worklogs to you correctly\n'));
+    console.log(chalk.blue.bold("\n🔍 Finding Your Atlassian Account ID"));
+    console.log(
+      chalk.gray(
+        "Your Account ID is needed to attribute worklogs to you correctly\n",
+      ),
+    );
 
-    console.log(chalk.yellow('📋 Method 1: From JIRA Profile (Easiest)'));
-    console.log(chalk.white('1. Go to your JIRA instance (e.g., company.atlassian.net)'));
-    console.log(chalk.white('2. Click on your profile picture (top right)'));
+    console.log(chalk.yellow("📋 Method 1: From JIRA Profile (Easiest)"));
+    console.log(
+      chalk.white("1. Go to your JIRA instance (e.g., company.atlassian.net)"),
+    );
+    console.log(chalk.white("2. Click on your profile picture (top right)"));
     console.log(chalk.white('3. Select "Profile"'));
-    console.log(chalk.white('4. Look at the URL - it contains your Account ID'));
-    console.log(chalk.gray('   Example: /jira/people/712020:abc123def456 → Account ID: 712020:abc123def456\n'));
+    console.log(
+      chalk.white("4. Look at the URL - it contains your Account ID"),
+    );
+    console.log(
+      chalk.gray(
+        "   Example: /jira/people/712020:abc123def456 → Account ID: 712020:abc123def456\n",
+      ),
+    );
 
-    console.log(chalk.yellow('📋 Method 2: From Tempo Worklogs'));
-    console.log(chalk.white('1. Open Tempo in your browser'));
+    console.log(chalk.yellow("📋 Method 2: From Tempo Worklogs"));
+    console.log(chalk.white("1. Open Tempo in your browser"));
     console.log(chalk.white('2. Go to "My Work" or "Worklogs"'));
-    console.log(chalk.white('3. Right-click → "Inspect Element" on any of your worklogs'));
-    console.log(chalk.white('4. Look for data attributes containing your Account ID'));
+    console.log(
+      chalk.white('3. Right-click → "Inspect Element" on any of your worklogs'),
+    );
+    console.log(
+      chalk.white("4. Look for data attributes containing your Account ID"),
+    );
     console.log(chalk.gray('   Search for "712020:" in the HTML\n'));
 
-    console.log(chalk.yellow('📋 Method 3: From Browser Network Tab'));
-    console.log(chalk.white('1. Open your JIRA/Tempo in browser'));
-    console.log(chalk.white('2. Open Developer Tools (F12) → Network tab'));
-    console.log(chalk.white('3. Navigate to any page or refresh'));
+    console.log(chalk.yellow("📋 Method 3: From Browser Network Tab"));
+    console.log(chalk.white("1. Open your JIRA/Tempo in browser"));
+    console.log(chalk.white("2. Open Developer Tools (F12) → Network tab"));
+    console.log(chalk.white("3. Navigate to any page or refresh"));
     console.log(chalk.white('4. Look for API calls containing "accountId"'));
-    console.log(chalk.gray('   Account ID format: 712020:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n'));
+    console.log(
+      chalk.gray(
+        "   Account ID format: 712020:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n",
+      ),
+    );
 
-    console.log(chalk.yellow('📋 Method 4: Ask IT Admin'));
-    console.log(chalk.white('Your IT administrator can provide your Atlassian Account ID'));
-    console.log(chalk.gray('Especially helpful in enterprise environments\n'));
+    console.log(chalk.yellow("📋 Method 4: Ask IT Admin"));
+    console.log(
+      chalk.white(
+        "Your IT administrator can provide your Atlassian Account ID",
+      ),
+    );
+    console.log(chalk.gray("Especially helpful in enterprise environments\n"));
 
     const { shouldOpenBrowser } = await inquirer.prompt([
       {
-        type: 'confirm',
-        name: 'shouldOpenBrowser',
-        message: 'Would you like me to open your JIRA profile page?',
-        default: true
-      }
+        type: "confirm",
+        name: "shouldOpenBrowser",
+        message: "Would you like me to open your JIRA profile page?",
+        default: true,
+      },
     ]);
 
     if (shouldOpenBrowser) {
       try {
         const profileUrl = `${this.config.api.jiraBaseUrl}/jira/people/search`;
-        await require('open')(profileUrl);
-        console.log(chalk.green('✅ Opened JIRA people search'));
-        console.log(chalk.gray('Search for yourself and click on your profile to see your Account ID\n'));
+        await require("open")(profileUrl);
+        console.log(chalk.green("✅ Opened JIRA people search"));
+        console.log(
+          chalk.gray(
+            "Search for yourself and click on your profile to see your Account ID\n",
+          ),
+        );
       } catch (error) {
-        console.log(chalk.yellow('⚠️  Could not open browser'));
-        console.log(chalk.white(`Please manually visit: ${this.config.api.jiraBaseUrl}/jira/people/search\n`));
+        console.log(chalk.yellow("⚠️  Could not open browser"));
+        console.log(
+          chalk.white(
+            `Please manually visit: ${this.config.api.jiraBaseUrl}/jira/people/search\n`,
+          ),
+        );
       }
     }
 
-    console.log(chalk.blue('💡 Pro Tips:'));
+    console.log(chalk.blue("💡 Pro Tips:"));
     console.log(chalk.gray('• Account ID always starts with "712020:"'));
-    console.log(chalk.gray('• The format is: 712020:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'));
-    console.log(chalk.gray('• It\'s the same across all Atlassian products (JIRA, Confluence, Tempo)'));
-    console.log(chalk.gray('• Once you find it, save it for future reference\n'));
+    console.log(
+      chalk.gray(
+        "• The format is: 712020:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      ),
+    );
+    console.log(
+      chalk.gray(
+        "• It's the same across all Atlassian products (JIRA, Confluence, Tempo)",
+      ),
+    );
+    console.log(
+      chalk.gray("• Once you find it, save it for future reference\n"),
+    );
 
     await inquirer.prompt([
       {
-        type: 'input',
-        name: 'continue',
-        message: 'Press Enter when you\'re ready to continue...'
-      }
+        type: "input",
+        name: "continue",
+        message: "Press Enter when you're ready to continue...",
+      },
     ]);
   }
 
   async setupWorkspace() {
-    console.log(chalk.yellow('\n📁 Step 2: Workspace Setup'));
-    console.log(chalk.gray('Configure your file workspace and preferences\n'));
+    console.log(chalk.yellow("\n📁 Step 2: Workspace Setup"));
+    console.log(chalk.gray("Configure your file workspace and preferences\n"));
 
-    const defaultWorkspace = path.join(os.homedir(), 'tempo-workspace');
-    
+    const defaultWorkspace = path.join(os.homedir(), "tempo-workspace");
+
     const workspaceConfig = await inquirer.prompt([
       {
-        type: 'input',
-        name: 'workspaceDir',
-        message: 'Choose your workspace directory:',
+        type: "input",
+        name: "workspaceDir",
+        message: "Choose your workspace directory:",
         default: defaultWorkspace,
         validate: (input) => {
           try {
             const resolvedPath = path.resolve(input.trim());
             return true;
           } catch {
-            return 'Please enter a valid directory path';
+            return "Please enter a valid directory path";
           }
         },
-        filter: (input) => path.resolve(input.trim())
+        filter: (input) => path.resolve(input.trim()),
       },
       {
-        type: 'input',
-        name: 'importFile',
-        message: 'Default import filename:',
-        default: 'my-worklogs.csv',
+        type: "input",
+        name: "importFile",
+        message: "Default import filename:",
+        default: "my-worklogs.csv",
         validate: (input) => {
-          if (!input.trim()) return 'Import filename is required';
-          if (!input.endsWith('.csv')) return 'Import file should be a .csv file';
+          if (!input.trim()) return "Import filename is required";
+          if (!input.endsWith(".csv"))
+            return "Import file should be a .csv file";
           return true;
-        }
+        },
       },
       {
-        type: 'list',
-        name: 'defaultDateScope',
-        message: 'Default date scope for imports:',
+        type: "list",
+        name: "defaultDateScope",
+        message: "Default date scope for imports:",
         choices: [
-          { name: 'Current week (Monday-Sunday)', value: 'current-week' },
-          { name: 'Last 7 days', value: 'last-7-days' },
-          { name: 'This month', value: 'this-month' },
-          { name: 'All dates from file', value: 'all' }
+          {
+            name: `Current week (${this.getCurrentWeekRange()})`,
+            value: "current-week",
+          },
+          { name: "Last 7 days", value: "last-7-days" },
+          { name: "This month", value: "this-month" },
+          { name: "All dates from file", value: "all" },
         ],
-        default: 'current-week'
+        default: "current-week",
       },
       {
-        type: 'confirm',
-        name: 'enableBetaFeatures',
-        message: 'Enable beta features (advanced logging, reporting)?',
-        default: false
-      }
+        type: "confirm",
+        name: "enableBetaFeatures",
+        message: "Enable beta features (advanced logging, reporting)?",
+        default: false,
+      },
     ]);
 
     // Create workspace directory structure
     try {
       const workspaceDir = workspaceConfig.workspaceDir;
-      const exportDir = path.join(workspaceDir, 'exports');
-      const backupDir = path.join(workspaceDir, 'backups');
-      const logsDir = path.join(workspaceDir, 'logs');
+      const exportDir = path.join(workspaceDir, "exports");
+      const backupDir = path.join(workspaceDir, "backups");
+      const logsDir = path.join(workspaceDir, "logs");
 
       fs.mkdirSync(workspaceDir, { recursive: true });
       fs.mkdirSync(exportDir, { recursive: true });
@@ -356,13 +446,12 @@ class SetupWizard {
       // Create sample import file template
       const sampleCsv = path.join(workspaceDir, workspaceConfig.importFile);
       const sampleContent = `date,startTime,endTime,issue,description
-${new Date().toISOString().split('T')[0]},09:00:00,10:00:00,PROJECT-123,Sample work entry`;
-      
+${new Date().toISOString().split("T")[0]},09:00:00,10:00:00,PROJECT-123,Sample work entry`;
+
       if (!fs.existsSync(sampleCsv)) {
         fs.writeFileSync(sampleCsv, sampleContent);
         console.log(chalk.blue(`📝 Created sample file: ${sampleCsv}`));
       }
-
     } catch (error) {
       throw new Error(`Failed to create workspace: ${error.message}`);
     }
@@ -370,11 +459,11 @@ ${new Date().toISOString().split('T')[0]},09:00:00,10:00:00,PROJECT-123,Sample w
     this.config.user.workspaceDir = workspaceConfig.workspaceDir;
     this.config.files = {
       importFile: workspaceConfig.importFile,
-      exportDir: 'exports',
-      backupDir: 'backups'
+      exportDir: "exports",
+      backupDir: "backups",
     };
     this.config.import = {
-      defaultDateScope: workspaceConfig.defaultDateScope
+      defaultDateScope: workspaceConfig.defaultDateScope,
     };
     this.config.cli = {
       function_beta: workspaceConfig.enableBetaFeatures,
@@ -382,36 +471,36 @@ ${new Date().toISOString().split('T')[0]},09:00:00,10:00:00,PROJECT-123,Sample w
       progressBars: true,
       verboseLogging: false,
       silentMode: false,
-      logToFile: true
+      logToFile: true,
     };
     this.config.logging = {
       enabled: true,
-      logFile: path.join(workspaceConfig.workspaceDir, 'logs', 'tempo-cli.log'),
-      maxFileSize: '10MB',
+      logFile: path.join(workspaceConfig.workspaceDir, "logs", "tempo-cli.log"),
+      maxFileSize: "10MB",
       maxFiles: 5,
-      level: 'info',
-      consoleLevel: 'normal'
+      level: "info",
+      consoleLevel: "normal",
     };
     this.config.issueMapping = {};
   }
 
   async saveConfiguration() {
-    console.log(chalk.yellow('\n💾 Step 3: Saving Configuration'));
-    
+    console.log(chalk.yellow("\n💾 Step 3: Saving Configuration"));
+
     try {
-      const configPath = path.join(process.cwd(), 'config.yaml');
-      
+      const configPath = path.join(process.cwd(), "config.yaml");
+
       // Generate configuration from template with real values
       const configContent = this.generateSimplifiedConfigFromTemplate();
-      
+
       fs.writeFileSync(configPath, configContent);
       console.log(chalk.green(`✅ Configuration saved to ${configPath}`));
 
       // Create .env file as backup
-      const envPath = path.join(process.cwd(), '.env');
+      const envPath = path.join(process.cwd(), ".env");
       if (!fs.existsSync(envPath)) {
         const envContent = `# Tempo CLI Environment Variables (Backup)
-# Auto-generated on ${new Date().toISOString().split('T')[0]}
+# Auto-generated on ${new Date().toISOString().split("T")[0]}
 TEMPO_API_TOKEN=${this.config.api.tempoToken}
 JIRA_BASE_URL=${this.config.api.jiraBaseUrl}
 TEMPO_BASE_URL=https://api.tempo.io/4
@@ -419,17 +508,16 @@ NODE_ENV=production
 `;
 
         fs.writeFileSync(envPath, envContent);
-        console.log(chalk.blue('📋 Created .env backup file'));
+        console.log(chalk.blue("📋 Created .env backup file"));
       }
-
     } catch (error) {
       throw new Error(`Failed to save configuration: ${error.message}`);
     }
   }
 
   generateSimplifiedConfigFromTemplate() {
-    const timestamp = new Date().toISOString().split('T')[0];
-    
+    const timestamp = new Date().toISOString().split("T")[0];
+
     // Generate simplified config.yaml focused on static mapping
     return `# Tempo CLI Configuration
 # Auto-generated by setup wizard on ${timestamp}
@@ -513,71 +601,115 @@ setup:
   }
 
   async showSetupComplete() {
-    console.log(chalk.green.bold('\n🎉 Tempo Booker Setup Complete!'));
-    console.log(chalk.gray('Your simplified Tempo Booker is ready for static issue mapping\n'));
+    console.log(chalk.green.bold("\n🎉 Tempo Booker Setup Complete!"));
+    console.log(
+      chalk.gray(
+        "Your simplified Tempo Booker is ready for static issue mapping\n",
+      ),
+    );
 
-    console.log(chalk.blue('📋 Configuration Summary:'));
-    console.log(chalk.white(`• User: ${this.config.user.name} (${this.config.user.accountId})`));
+    console.log(chalk.blue("📋 Configuration Summary:"));
+    console.log(
+      chalk.white(
+        `• User: ${this.config.user.name} (${this.config.user.accountId})`,
+      ),
+    );
     console.log(chalk.white(`• JIRA Instance: ${this.config.api.jiraBaseUrl}`));
     console.log(chalk.white(`• Workspace: ${this.config.user.workspaceDir}`));
     console.log(chalk.white(`• Import File: ${this.config.files.importFile}`));
-    console.log(chalk.white(`• Beta Features: ${this.config.cli.function_beta ? 'Enabled' : 'Disabled'}`));
+    console.log(
+      chalk.white(
+        `• Beta Features: ${this.config.cli.function_beta ? "Enabled" : "Disabled"}`,
+      ),
+    );
     console.log(chalk.white(`• Configuration: Simplified (Static Mapping)`));
 
-    console.log(chalk.yellow('\n🎫 Issue Mapping Setup:'));
-    console.log(chalk.red('IMPORTANT: Add your JIRA issues before importing'));
-    console.log(chalk.white('Method 1: Use the add-issue tool (recommended)'));
-    console.log(chalk.gray('   node add-issue.js'));
-    console.log(chalk.white('Method 2: Edit config.yaml manually'));
-    console.log(chalk.gray('   Add entries under the issueMapping section'));
+    console.log(chalk.yellow("\n🎫 Issue Mapping Setup:"));
+    console.log(chalk.red("IMPORTANT: Add your JIRA issues before importing"));
+    console.log(chalk.white("Method 1: Use the add-issue tool (recommended)"));
+    console.log(chalk.gray("   node add-issue.js"));
+    console.log(chalk.white("Method 2: Edit config.yaml manually"));
+    console.log(chalk.gray("   Add entries under the issueMapping section"));
 
-    console.log(chalk.yellow('\n🚀 Next Steps:'));
-    console.log(chalk.white('1. Add your JIRA issues: node add-issue.js'));
-    console.log(chalk.white(`2. Edit your import file: ${path.join(this.config.user.workspaceDir, this.config.files.importFile)}`));
-    console.log(chalk.white('3. Test import: tempo-booker import'));
-    console.log(chalk.white('4. Start interactive mode: tempo-booker'));
+    console.log(chalk.yellow("\n🚀 Next Steps:"));
+    console.log(chalk.white("1. Add your JIRA issues: node add-issue.js"));
+    console.log(
+      chalk.white(
+        `2. Edit your import file: ${path.join(this.config.user.workspaceDir, this.config.files.importFile)}`,
+      ),
+    );
+    console.log(chalk.white("3. Test import: tempo-booker import"));
+    console.log(chalk.white("4. Start interactive mode: tempo-booker"));
 
-    console.log(chalk.blue('\n📁 Your Workspace:'));
+    console.log(chalk.blue("\n📁 Your Workspace:"));
     console.log(chalk.gray(`${this.config.user.workspaceDir}/`));
-    console.log(chalk.gray(`├── ${this.config.files.importFile}     # Edit this to add your worklogs`));
-    console.log(chalk.gray(`├── exports/        # Export files will be saved here`));
-    console.log(chalk.gray(`├── backups/        # Automatic backups from clear operations`));
+    console.log(
+      chalk.gray(
+        `├── ${this.config.files.importFile}     # Edit this to add your worklogs`,
+      ),
+    );
+    console.log(
+      chalk.gray(`├── exports/        # Export files will be saved here`),
+    );
+    console.log(
+      chalk.gray(
+        `├── backups/        # Automatic backups from clear operations`,
+      ),
+    );
     console.log(chalk.gray(`└── logs/           # Application logs`));
 
-    console.log(chalk.blue('\n📖 Documentation:'));
-    console.log(chalk.white('• Static Issue Mapping Guide: docs/CONFIGURATION.md'));
-    console.log(chalk.white('• CSV Format Examples: Sample file created in workspace'));
-    console.log(chalk.white('• Command Help: tempo-booker --help'));
+    console.log(chalk.blue("\n📖 Documentation:"));
+    console.log(
+      chalk.white("• Static Issue Mapping Guide: docs/CONFIGURATION.md"),
+    );
+    console.log(
+      chalk.white("• CSV Format Examples: Sample file created in workspace"),
+    );
+    console.log(chalk.white("• Command Help: tempo-booker --help"));
 
-    console.log(chalk.gray('\n💡 Pro Tips:'));
-    console.log(chalk.gray('• Use node add-issue.js to quickly add new JIRA issues'));
-    console.log(chalk.gray('• Static mapping is perfect for regular issue sets'));
-    console.log(chalk.gray('• Your data stays organized in the workspace directory'));
-    console.log(chalk.gray('• Version control your issueMapping for team sharing'));
+    console.log(chalk.gray("\n💡 Pro Tips:"));
+    console.log(
+      chalk.gray("• Use node add-issue.js to quickly add new JIRA issues"),
+    );
+    console.log(
+      chalk.gray("• Static mapping is perfect for regular issue sets"),
+    );
+    console.log(
+      chalk.gray("• Your data stays organized in the workspace directory"),
+    );
+    console.log(
+      chalk.gray("• Version control your issueMapping for team sharing"),
+    );
 
-    console.log(chalk.green('\n✨ Happy time tracking with Tempo Booker!'));
-    console.log(chalk.blue('Focus on what matters - your work, not complex configuration.'));
+    console.log(chalk.green("\n✨ Happy time tracking with Tempo Booker!"));
+    console.log(
+      chalk.blue(
+        "Focus on what matters - your work, not complex configuration.",
+      ),
+    );
   }
 
   static async checkAndRunSetup() {
-    const configPath = path.join(process.cwd(), 'config.yaml');
-    
+    const configPath = path.join(process.cwd(), "config.yaml");
+
     if (!fs.existsSync(configPath)) {
-      console.log(chalk.yellow('🔧 Configuration not found. Running first-time setup...'));
+      console.log(
+        chalk.yellow("🔧 Configuration not found. Running first-time setup..."),
+      );
       const wizard = new SetupWizard();
       await wizard.run();
       return true; // Setup was run
     }
-    
+
     // Check if existing config needs migration
-    const ConfigMigration = require('./configMigration');
+    const ConfigMigration = require("./configMigration");
     const migrated = await ConfigMigration.migrateConfig();
-    
+
     if (migrated) {
-      console.log(chalk.green('\n✅ Configuration migrated successfully!'));
+      console.log(chalk.green("\n✅ Configuration migrated successfully!"));
       return true; // Migration was run
     }
-    
+
     return false; // No setup needed
   }
 }
