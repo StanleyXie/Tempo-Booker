@@ -11,8 +11,25 @@ class TempoTimeTracker {
     this.logger = new Logger(config);
   }
 
+  // Clear all config-related caches to ensure fresh configuration
+  clearConfigCache() {
+    // Clear the main config module cache
+    const configPath = require.resolve("./utils/config");
+    delete require.cache[configPath];
+
+    // Clear any yaml file caches that might be related
+    Object.keys(require.cache).forEach((key) => {
+      if (key.includes("config.yaml") || key.includes("config.yml")) {
+        delete require.cache[key];
+      }
+    });
+  }
+
   async initialize() {
     try {
+      // Clear config cache to ensure fresh configuration on startup
+      this.clearConfigCache();
+
       this.logger.info("🚀 Initializing Tempo Time Tracker...");
 
       // Load token from secure storage before validation

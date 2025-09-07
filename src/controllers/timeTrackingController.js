@@ -302,11 +302,8 @@ class TimeTrackingController {
 
       // Extract issue key from description if available (pattern: PROJ-123)
       let issueKey = "Unknown";
-      if (worklog.description) {
-        const match = worklog.description.match(/([A-Z]+-\d+)/);
-        if (match) {
-          issueKey = match[1];
-        }
+      if (worklog.issue?.key && predefinedIssueKeys.has(worklog.issue.key)) {
+        issueKey = worklog.issue.key;
       }
 
       // Fallback to issue ID if no key found
@@ -620,7 +617,7 @@ class TimeTrackingController {
       // Extract issue key using multiple strategies
       let issueKey = null;
 
-      // Strategy 1: Extract from description if available
+      // Strategy 1: Use actual issue key if available
       if (worklog.description) {
         const match = worklog.description.match(/([A-Z]+-\d+)/);
         if (match) {
@@ -628,7 +625,7 @@ class TimeTrackingController {
         }
       }
 
-      // Strategy 2: Use Issue ID mapping if we have it
+      // Strategy 2: Map from issue ID using configured mappings
       if (!issueKey && worklog.issue?.id && issueIdToKeyMap[worklog.issue.id]) {
         issueKey = issueIdToKeyMap[worklog.issue.id];
       }
@@ -655,6 +652,38 @@ class TimeTrackingController {
   printSimpleTimeTable(dateRange, dailyData, dailyTotals, logger = null) {
     const log = logger || this.logger;
     log.info("\n📅 Tempo Timesheet - Weekly View");
+
+    // Display issue mapping reference for user context
+    // Clear cache and reload config to get latest values
+    delete require.cache[require.resolve("../utils/config")];
+    const config = require("../utils/config");
+    const issueMapping = config.issueMapping || {};
+    const relevantMappings = {};
+
+    // Find which issues are actually being displayed
+    const allDisplayedIssues = new Set();
+    Object.values(dailyData).forEach((dayData) => {
+      Object.keys(dayData).forEach((issue) => allDisplayedIssues.add(issue));
+    });
+
+    // Get mappings for displayed issues
+    for (const [key, info] of Object.entries(issueMapping)) {
+      if (allDisplayedIssues.has(key)) {
+        relevantMappings[key] = info;
+      }
+    }
+
+    if (Object.keys(relevantMappings).length > 0) {
+      log.info("\n📋 Issue Reference:");
+      Object.entries(relevantMappings)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .forEach(([key, info]) => {
+          log.info(
+            `  ${key.padEnd(12)} - ${info.summary || "No summary available"}`,
+          );
+        });
+      log.info("");
+    }
 
     // Calculate optimal column widths like Tempo interface
     const allIssues = new Set();
@@ -809,20 +838,40 @@ class TimeTrackingController {
       "ITST-15191",
     ]);
 
+    // Build issue ID to key mapping using configured mappings
+    const config = require("../utils/config");
+    const issueMapping = config.issueMapping || {};
+    const issueIdToKeyMap = {};
+
+    // Create reverse mapping from ID to key using configured mappings
+    for (const [key, info] of Object.entries(issueMapping)) {
+      if (predefinedIssueKeys.has(key)) {
+        issueIdToKeyMap[info.id.toString()] = key;
+      }
+    }
+
     // Filter and process worklogs
     const filteredWorklogs = [];
     let totalSeconds = 0;
 
     worklogs.forEach((worklog) => {
       let issueKey = null;
+
+      // Strategy 1: Extract from description if available
       if (worklog.description) {
         const match = worklog.description.match(/([A-Z]+-\d+)/);
-        if (match && predefinedIssueKeys.has(match[1])) {
+        if (match) {
           issueKey = match[1];
         }
       }
 
-      if (issueKey) {
+      // Strategy 2: Use Issue ID mapping if we have it
+      if (!issueKey && worklog.issue?.id && issueIdToKeyMap[worklog.issue.id]) {
+        issueKey = issueIdToKeyMap[worklog.issue.id];
+      }
+
+      // Only include if we found a valid issue key that's in our predefined list
+      if (issueKey && predefinedIssueKeys.has(issueKey)) {
         const startTime = worklog.startTime || "09:00:00";
         const hours = worklog.timeSpentSeconds / 3600;
         const endTime = this.calculateEndTime(startTime, hours);
