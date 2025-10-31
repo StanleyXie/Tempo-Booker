@@ -23,6 +23,19 @@ class TempoTimeTracker {
         delete require.cache[key];
       }
     });
+
+    // Clear issue resolver caches to pick up new config
+    try {
+      const staticIssueResolver = require("./services/staticIssueResolver");
+      if (
+        staticIssueResolver &&
+        typeof staticIssueResolver.clearCache === "function"
+      ) {
+        staticIssueResolver.clearCache();
+      }
+    } catch (e) {
+      // Ignore if issue resolver not loaded yet
+    }
   }
 
   async initialize() {
@@ -207,6 +220,14 @@ class TempoTimeTracker {
             break;
           case "last-7-days":
             dateFrom = moment().subtract(6, "days").format("YYYY-MM-DD");
+            dateTo = moment().format("YYYY-MM-DD");
+            break;
+          case "last-14-days":
+            dateFrom = moment().subtract(13, "days").format("YYYY-MM-DD");
+            dateTo = moment().format("YYYY-MM-DD");
+            break;
+          case "last-21-days":
+            dateFrom = moment().subtract(20, "days").format("YYYY-MM-DD");
             dateTo = moment().format("YYYY-MM-DD");
             break;
           case "this-month":
@@ -477,7 +498,11 @@ async function processCommands(args) {
       ),
     );
     console.log(chalk.white("\nDate Scopes:"));
-    console.log(chalk.gray("  current-week, last-7-days, this-month, all"));
+    console.log(
+      chalk.gray(
+        "  current-week, last-7-days, last-14-days, last-21-days, this-month, all",
+      ),
+    );
     process.exit(0);
   } else {
     // Interactive mode

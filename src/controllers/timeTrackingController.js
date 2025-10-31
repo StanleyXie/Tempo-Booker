@@ -2749,11 +2749,22 @@ class TimeTrackingController {
 
       // Resolve file path to export directory
       const path = require("path");
-      const exportPath = path.join(config.exportDir, fileName);
+      let exportPath;
 
-      // Ensure export directory exists
-      if (!fs.existsSync(config.exportDir)) {
-        fs.mkdirSync(config.exportDir, { recursive: true });
+      // If fileName is absolute path, use it directly; otherwise join with exportDir
+      if (path.isAbsolute(fileName)) {
+        exportPath = fileName;
+        // Ensure the directory of the absolute path exists
+        const exportDir = path.dirname(exportPath);
+        if (!fs.existsSync(exportDir)) {
+          fs.mkdirSync(exportDir, { recursive: true });
+        }
+      } else {
+        exportPath = path.join(config.exportDir, fileName);
+        // Ensure export directory exists
+        if (!fs.existsSync(config.exportDir)) {
+          fs.mkdirSync(config.exportDir, { recursive: true });
+        }
       }
 
       // Write file

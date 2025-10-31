@@ -5,6 +5,39 @@ All notable changes to the Tempo Booker CLI project will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2025-10-31
+
+### Fixed
+
+- **🔧 Backup File Path Resolution**: Fixed unreachable backup file path error when clearing worklogs
+  - Updated `exportWorklogs()` to properly handle absolute file paths
+  - Added automatic backup directory creation in clear worklogs flow
+  - Backup files now correctly saved to workspace backup directory
+
+- **📂 Config Loading Priority**: Fixed configuration loading to prioritize user's actual workspace
+  - Now checks `~/Documents/tempo-workspace/config.yaml` first
+  - Eliminated circular dependency in workspace directory resolution
+  - Ensures correct config is loaded on every startup
+
+- **🔄 Issue Resolver Cache**: Enhanced cache management for better config reload
+  - Added static issue resolver cache clearing on application startup
+  - Prevents stale issue mapping data after config changes
+  - Ensures fresh issue mappings are loaded on every app restart
+
+### Changed
+
+- **📁 Path Handling**: Improved absolute vs relative path detection in export operations
+- **🎯 Config Discovery**: Updated config file search order for better user experience
+  - Priority: Documents workspace → Home workspace → Current directory → App directory
+- **💾 Cache Management**: Enhanced startup initialization to clear all relevant caches
+
+### Technical Details
+
+- Fixed `src/controllers/timeTrackingController.js` - Smart path handling for exports
+- Fixed `src/utils/cli.js` - Explicit backup directory creation before clear operations
+- Fixed `src/utils/config.js` - Improved config loading priority logic
+- Fixed `src/index.js` - Added issue resolver cache clearing on startup
+
 ## [1.1.3] - 2025-09-07
 
 ### Added

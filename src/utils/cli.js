@@ -605,6 +605,15 @@ class CLI {
       const config = require("./config");
       const backupFilePath = config.resolveFilePath(backupFileName, "backup");
 
+      // Ensure backup directory exists
+      const fs = require("fs");
+      const path = require("path");
+      const backupDir = path.dirname(backupFilePath);
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+        console.log(chalk.gray(`📁 Created backup directory: ${backupDir}`));
+      }
+
       await timeTrackingController.exportWorklogs(
         dateFrom,
         dateTo,

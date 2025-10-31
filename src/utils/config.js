@@ -28,7 +28,7 @@ class Config {
    */
   getTokenManager() {
     if (!this._tokenManager) {
-      const SecureTokenManager = require('./secureTokenManager');
+      const SecureTokenManager = require("./secureTokenManager");
       this._tokenManager = new SecureTokenManager();
     }
     return this._tokenManager;
@@ -45,7 +45,7 @@ class Config {
     const tokenManager = this.getTokenManager();
     const result = await tokenManager.getToken();
     this.tempoApiToken = result.token;
-    
+
     return this.tempoApiToken;
   }
 
@@ -60,33 +60,38 @@ class Config {
 
   loadYamlConfig() {
     // Priority order for config.yaml location:
-    // 1. User's tempo-workspace directory (preferred)
-    // 2. Current working directory (fallback)
-    // 3. Application root directory (legacy)
-    
+    // 1. User's Documents/tempo-workspace directory (most common)
+    // 2. User's home/tempo-workspace directory (fallback)
+    // 3. Current working directory (development)
+    // 4. Application root directory (legacy)
+
     const possiblePaths = [];
-    
-    // Get workspace directory from existing config or default
-    const workspaceDir = this.yaml?.user?.workspaceDir || 
-                        path.join(require('os').homedir(), 'tempo-workspace');
-    
-    possiblePaths.push(path.join(workspaceDir, 'config.yaml'));
-    possiblePaths.push(path.join(process.cwd(), 'config.yaml'));
-    possiblePaths.push(path.join(__dirname, '../../config.yaml'));
+    const os = require("os");
+    const homeDir = os.homedir();
+
+    // Check common workspace locations first
+    possiblePaths.push(
+      path.join(homeDir, "Documents", "tempo-workspace", "config.yaml"),
+    );
+    possiblePaths.push(path.join(homeDir, "tempo-workspace", "config.yaml"));
+    possiblePaths.push(path.join(process.cwd(), "config.yaml"));
+    possiblePaths.push(path.join(__dirname, "../../config.yaml"));
 
     let configPath = null;
-    let configSource = '';
+    let configSource = "";
 
     // Find the first existing config file
     for (const testPath of possiblePaths) {
       if (fs.existsSync(testPath)) {
         configPath = testPath;
-        if (testPath.includes('tempo-workspace')) {
-          configSource = 'tempo-workspace';
-        } else if (testPath === path.join(process.cwd(), 'config.yaml')) {
-          configSource = 'current directory';
+        if (testPath.includes("Documents/tempo-workspace")) {
+          configSource = "Documents/tempo-workspace";
+        } else if (testPath.includes("tempo-workspace")) {
+          configSource = "home/tempo-workspace";
+        } else if (testPath === path.join(process.cwd(), "config.yaml")) {
+          configSource = "current directory";
         } else {
-          configSource = 'application directory';
+          configSource = "application directory";
         }
         break;
       }
@@ -181,7 +186,7 @@ cli:
 # Logging Configuration
 logging:
   enabled: true
-  logFile: "${path.join(workspaceDir, 'logs', 'tempo-cli.log')}"
+  logFile: "${path.join(workspaceDir, "logs", "tempo-cli.log")}"
   maxFileSize: "10MB"
   maxFiles: 5
   level: "info"
@@ -191,10 +196,9 @@ logging:
       fs.writeFileSync(configPath, defaultConfig);
       this.yaml = yaml.load(defaultConfig);
       this.configPath = configPath;
-      
+
       console.log(`✅ Created default configuration at: ${configPath}`);
       console.log(`📝 Please edit the config file to add your details`);
-      
     } catch (error) {
       console.error(`❌ Error creating default config: ${error.message}`);
       this.yaml = {};
@@ -217,9 +221,12 @@ logging:
 
   // Import configuration getters
   get defaultImportFile() {
-    const fileName = this.yaml.files?.importFile || this.yaml.import?.defaultFile || "tempo.csv";
+    const fileName =
+      this.yaml.files?.importFile ||
+      this.yaml.import?.defaultFile ||
+      "tempo.csv";
     const workspaceDir = this.yaml.user?.workspaceDir;
-    
+
     if (workspaceDir && !path.isAbsolute(fileName)) {
       return path.join(workspaceDir, fileName);
     }
@@ -236,9 +243,9 @@ logging:
   }
 
   get exportDir() {
-    const exportDir = this.yaml.files?.exportDir || 'exports';
+    const exportDir = this.yaml.files?.exportDir || "exports";
     const workspaceDir = this.workspaceDir;
-    
+
     if (!path.isAbsolute(exportDir)) {
       return path.join(workspaceDir, exportDir);
     }
@@ -246,29 +253,29 @@ logging:
   }
 
   get backupDir() {
-    const backupDir = this.yaml.files?.backupDir || 'backups';
+    const backupDir = this.yaml.files?.backupDir || "backups";
     const workspaceDir = this.workspaceDir;
-    
+
     if (!path.isAbsolute(backupDir)) {
       return path.join(workspaceDir, backupDir);
     }
     return backupDir;
   }
 
-  resolveFilePath(fileName, type = 'default') {
+  resolveFilePath(fileName, type = "default") {
     const workspaceDir = this.workspaceDir;
-    
+
     if (path.isAbsolute(fileName)) {
       return fileName;
     }
-    
+
     switch (type) {
-      case 'export':
+      case "export":
         return path.join(this.exportDir, fileName);
-      case 'backup':
+      case "backup":
         return path.join(this.backupDir, fileName);
-      case 'import':
-      case 'default':
+      case "import":
+      case "default":
       default:
         return path.join(workspaceDir, fileName);
     }
@@ -314,14 +321,18 @@ logging:
 
   // Logging configuration getters
   get logging() {
-    const defaultLogFile = path.join(this.workspaceDir, "logs", "tempo-cli.log");
+    const defaultLogFile = path.join(
+      this.workspaceDir,
+      "logs",
+      "tempo-cli.log",
+    );
     const config = this.yaml.logging || {
       enabled: true,
       logFile: defaultLogFile,
       maxFileSize: "10MB",
       maxFiles: 5,
       level: "info",
-      consoleLevel: "normal"
+      consoleLevel: "normal",
     };
 
     // Resolve log file path relative to workspace if not absolute
@@ -364,14 +375,16 @@ logging:
    */
   getConfigPath() {
     const possiblePaths = [];
-    
-    // Get workspace directory from existing config or default
-    const workspaceDir = this.yaml?.user?.workspaceDir || 
-                        path.join(require('os').homedir(), 'tempo-workspace');
-    
-    possiblePaths.push(path.join(workspaceDir, 'config.yaml'));
-    possiblePaths.push(path.join(process.cwd(), 'config.yaml'));
-    possiblePaths.push(path.join(__dirname, '../../config.yaml'));
+    const os = require("os");
+    const homeDir = os.homedir();
+
+    // Check common workspace locations first (same priority as loadYamlConfig)
+    possiblePaths.push(
+      path.join(homeDir, "Documents", "tempo-workspace", "config.yaml"),
+    );
+    possiblePaths.push(path.join(homeDir, "tempo-workspace", "config.yaml"));
+    possiblePaths.push(path.join(process.cwd(), "config.yaml"));
+    possiblePaths.push(path.join(__dirname, "../../config.yaml"));
 
     // Find the first existing config file
     for (const testPath of possiblePaths) {
