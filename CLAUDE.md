@@ -431,10 +431,11 @@ atlassian:
    - ✅ **Cleaner user experience**: Single configuration location (config.yaml + keychain)
 
 2. **Configuration Priority (New)**:
+
    ```
    🏗️  Configuration Hierarchy:
    1. 🔐 Secure Keychain (tokens)
-   2. 📄 config.yaml (all settings) 
+   2. 📄 config.yaml (all settings)
    3. 🔤 Interactive prompts (missing values)
    4. 🎯 Code defaults (URLs, etc.)
    ```
@@ -461,17 +462,18 @@ atlassian:
    - ✅ **Documentation cleaned**: Updated references from .env to keychain storage
 
 3. **Enhanced .gitignore Coverage**:
+
    ```
    # Local development files
    temp.local/
    *.local
-   
-   # OS generated files  
+
+   # OS generated files
    .DS_Store, Thumbs.db, Desktop.ini
-   
+
    # User-specific configuration
    config.yaml, data/, logs/
-   
+
    # IDE and temporary files
    .vscode/, .idea/, tmp/, *.swp
    ```
@@ -490,7 +492,7 @@ atlassian:
 tempo/
 ├── 📁 src/
 │   ├── 📁 controllers/              # Business logic
-│   ├── 📁 models/                   # Data models  
+│   ├── 📁 models/                   # Data models
 │   ├── 📁 services/                 # External integrations
 │   ├── 📁 utils/                    # User CLI utilities
 │   │   ├── add-issue.js            # Moved from root
@@ -507,8 +509,9 @@ tempo/
 ```
 
 **Benefits Achieved**:
+
 - ✅ **Clear separation**: utilities vs scripts vs tests
-- ✅ **Standard conventions**: Follows Node.js project patterns  
+- ✅ **Standard conventions**: Follows Node.js project patterns
 - ✅ **Updated references**: All paths and imports corrected
 - ✅ **Clean root**: Only essential config and docs remain
 
@@ -516,7 +519,7 @@ tempo/
 
 **Removed Obsolete Components**:
 
-1. **Test Files Removed**: 
+1. **Test Files Removed**:
    - `test-extract-command.js`, `test-with-user-session.js` (browser automation)
    - `test-jira-api-integration.js`, `test-itst-14619.js` (one-time tests)
    - `test-import-fix.csv`, `test-mcp-import.csv` (obsolete test data)
@@ -533,7 +536,111 @@ tempo/
 
 ---
 
-_Last updated: September 3, 2025_
-_Status: Repository secured and ready for GitHub commit - all sensitive data protected, .env dependency eliminated, project structure professionalized_
+### 🔄 Latest Development Updates (September 7, 2025)
+
+#### ✅ Week Consistency & Time Table Enhancement - COMPLETED
+
+**Major Fixes Implemented (v1.1.1 → v1.1.3)**:
+
+1. **Week Consistency Resolution**:
+   - ✅ **Issue Fixed**: Time table and detailed list showed inconsistent week ranges (Sunday-Saturday vs Monday-Sunday)
+   - ✅ **Solution Applied**: All week calculations now consistently use Monday-Sunday (ISO week) format
+   - ✅ **Date Range Display**: Week choices now show actual dates (e.g., "Current week (Sep 01 - Sep 07)")
+   - ✅ **Files Modified**: `src/index.js`, `src/utils/cli.js`, `src/utils/setupWizard.js`, `src/controllers/timeTrackingController.js`
+
+2. **Detailed List Functionality Fix**:
+   - ✅ **Issue Fixed**: "Failed to generate detailed list" error due to undefined log variable
+   - ✅ **Solution Applied**: Proper logger parameter integration in printDetailedList method
+   - ✅ **Filtering Enhancement**: Replaced description pattern matching with proper issue key/ID filtering
+   - ✅ **Results**: Now shows complete 40.0h (21 entries) matching time table exactly
+
+3. **Time Table Enhancement with Issue Reference**:
+   - ✅ **New Feature**: Added issue mapping reference display with summaries
+   - ✅ **User Experience**: Shows contextual information about what each issue represents
+   - ✅ **Example Output**:
+     ```
+     📋 Issue Reference:
+       DAU-2655     - 2025 Sprint Planning/Retro/Daily/Board Meetings
+       ITST-14440   - Azure | LZ CI/CD
+       ITST-14455   - Azure | LZ Requirements Engineering
+     ```
+
+4. **Config Cache Refresh System**:
+   - ✅ **Issue Fixed**: Config changes in config.yaml not reflected until restart
+   - ✅ **Solution Applied**: Automatic config cache clearing on application startup
+   - ✅ **Implementation**: `clearConfigCache()` method in main TempoTimeTracker class
+   - ✅ **Benefits**: Fresh configuration loading on every application start
+
+#### 🎯 Technical Implementation Details
+
+**Week Consistency Fix**:
+
+- **Before**: `moment().startOf('week')` (Sunday-Saturday) vs `moment().startOf('isoWeek')` (Monday-Sunday)
+- **After**: Consistent `moment().startOf('isoWeek')` across all operations
+- **Impact**: Time table and import operations now perfectly aligned
+
+**Issue Filtering Approach**:
+
+- **Before**: Description pattern matching (`worklog.description.match(/([A-Z]+-\d+)/)`)
+- **After**: Direct issue key/ID filtering using configured mappings
+- **Benefits**: More reliable, no dependency on text parsing, cleaner data model
+
+**Config Cache Implementation**:
+
+```javascript
+clearConfigCache() {
+  const configPath = require.resolve("./utils/config");
+  delete require.cache[configPath];
+
+  Object.keys(require.cache).forEach(key => {
+    if (key.includes('config.yaml') || key.includes('config.yml')) {
+      delete require.cache[key];
+    }
+  });
+}
+```
+
+#### 📦 NPM Package Updates
+
+**Latest Versions Published**:
+
+- **v1.1.1**: Week consistency and date range displays
+- **v1.1.2**: Detailed list error fix
+- **v1.1.3**: Issue reference display and config cache refresh
+
+**Package Status**:
+
+- ✅ **Published to npm**: `npm install -g tempo-booker`
+- ✅ **GitHub Repository**: StanleyXie/Tempo-Booker (personal account)
+- ✅ **Size**: 104.9 kB (38 files)
+- ✅ **Commands Available**: `tempo-booker` or `tempo`
+
+#### 🧪 Test Results Verified
+
+**Time Table & Detailed List Alignment**:
+
+- ✅ **Total Hours**: Both show 40.0h for Sep 01-07 period
+- ✅ **Entry Count**: Both show 21 entries across the week
+- ✅ **Daily Breakdown**: Consistent daily totals (Mon: 8.5h, Tue: 8.0h, etc.)
+- ✅ **Issue Mapping**: All issues properly resolved via ID mapping
+
+**Config Refresh Verification**:
+
+- ✅ **User Name**: Now shows "stanley.xie@og1o.es" instead of "Unknown User"
+- ✅ **Issue Summaries**: ITST-14455 shows "Azure | LZ Requirements Engineering"
+- ✅ **Immediate Updates**: Config changes reflected without restart
+
+#### 💡 User Experience Improvements
+
+1. **Better Context**: Issue reference shows what each code means
+2. **Consistent Weeks**: Monday-Sunday standard across all features
+3. **Fresh Config**: Changes immediately reflected in application
+4. **Reliable Filtering**: No dependency on description text analysis
+5. **Clean Interface**: Production-ready with proper error handling
+
+---
+
+_Last updated: September 7, 2025_
+_Status: Enhanced with issue reference display, config cache refresh, and consistent week calculations - all major UX improvements completed and published as v1.1.3_
 
 - to memorize
